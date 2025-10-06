@@ -41,7 +41,18 @@ func ConnectDB() {
 	log.Println("Creating new UUID-based structure...")
 
 	// Auto Migrate to create new structure
-	err = db.AutoMigrate(&models.User{}, &models.Chat{}, &models.Message{}, &models.VerificationCode{})
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Chat{},
+		&models.Message{},
+		&models.EmailVerification{},
+		&models.RefreshToken{},
+		&models.Workspace{},
+		&models.WorkspaceMember{},
+		&models.Board{},
+		&models.Column{},
+		&models.Card{},
+	)
 	if err != nil {
 		log.Fatal("Failed to migrate database. \n", err)
 	}

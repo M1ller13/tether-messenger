@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tether-postgres
+    environment:
+      POSTGRES_DB: tether_messenger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tether-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: tether-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: tether_messenger
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    volumes:
+      - ./server/uploads:/root/uploads
+    networks:
+      - tether-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: tether-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - tether-network
+    restart: unless-stopped
+
+  # Redis for caching and sessions (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: tether-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tether-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  tether-network:
+    driver: bridge

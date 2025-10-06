@@ -12,7 +12,7 @@ const apiClient = axios.create({
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -33,14 +33,14 @@ export const authAPI = {
 
 export const chatAPI = {
   async getChats() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch('/api/chats', {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     return res.json();
   },
   async createChat(otherUserId: string) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch('/api/chats', {
       method: 'POST',
       headers: {
@@ -52,14 +52,14 @@ export const chatAPI = {
     return res.json();
   },
   async getMessages(chatId: string) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch(`/api/chats/${chatId}/messages`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     return res.json();
   },
   async sendMessage(chatId: string, content: string) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: {
@@ -72,7 +72,7 @@ export const chatAPI = {
   },
 
   async searchUsers(query: string) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -82,7 +82,7 @@ export const chatAPI = {
   },
 
   async getProfile() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch('/api/profile', {
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -90,7 +90,7 @@ export const chatAPI = {
   },
 
   async updateProfile(profile: Partial<User>) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const res = await fetch('/api/profile', {
       method: 'PUT',
       headers: {
@@ -103,7 +103,7 @@ export const chatAPI = {
   },
 
   async uploadAvatar(file: File) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     const formData = new FormData();
     formData.append('avatar', file);
     const res = await fetch('/api/profile/avatar', {

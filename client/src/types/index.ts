@@ -1,10 +1,11 @@
 export interface User {
   id: string;
-  phone: string;
+  email: string;
   username: string;
   display_name: string;
   bio?: string;
   avatar_url?: string;
+  email_verified: boolean;
   last_seen?: string;
   created_at: string;
 }
@@ -28,7 +29,8 @@ export interface Chat {
 export interface AuthResponse {
   success: boolean;
   data: {
-    token: string;
+    access_token: string;
+    refresh_token: string;
     user: User;
   };
 }

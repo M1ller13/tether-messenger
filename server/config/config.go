@@ -30,9 +30,9 @@ func LoadConfig() {
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "password"),
-		DBName:     getEnv("DB_NAME", "tether_db"),
-		JWTSecret:  getEnv("JWT_SECRET", "your-secret-key"),
-		ServerPort: getEnv("SERVER_PORT", "8080"),
+		DBName:     getEnv("DB_NAME", "tether_messenger"),
+		JWTSecret:  getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-this-in-production"),
+		ServerPort: getEnv("SERVER_PORT", "8081"),
 	}
 }
 

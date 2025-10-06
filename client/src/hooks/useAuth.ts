@@ -1,55 +1,109 @@
 import { useState, useEffect } from 'react';
 
 export function useAuth() {
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [accessToken, setAccessToken] = useState(() => localStorage.getItem('access_token'));
+  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('refresh_token'));
   const [isValidating, setIsValidating] = useState(true);
 
   // Проверка валидности токена при загрузке
   useEffect(() => {
-    if (token) {
+    if (accessToken) {
       validateToken();
     } else {
       setIsValidating(false);
     }
-  }, [token]);
+  }, [accessToken]);
 
   const validateToken = async () => {
     try {
       const response = await fetch('/api/profile', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
       
       if (!response.ok) {
-        // Токен невалиден, очищаем его
-        logout();
+        // Access token невалиден, пробуем обновить
+        if (response.status === 401 && refreshToken) {
+          await refreshAccessToken();
+        } else {
+          logout();
+        }
       }
     } catch (error) {
-      // Ошибка сети, очищаем токен
+      // Ошибка сети, очищаем токены
       logout();
     } finally {
       setIsValidating(false);
     }
   };
 
-  const login = (jwt: string) => {
-    localStorage.setItem('token', jwt);
-    setToken(jwt);
+  const refreshAccessToken = async () => {
+    try {
+      const response = await fetch('/api/auth/refresh-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAccessToken(data.data.access_token);
+          setRefreshToken(data.data.refresh_token);
+          localStorage.setItem('access_token', data.data.access_token);
+          localStorage.setItem('refresh_token', data.data.refresh_token);
+          return;
+        }
+      }
+      
+      // Если refresh не удался, выходим
+      logout();
+    } catch (error) {
+      logout();
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
+  const login = (accessToken: string, refreshToken: string) => {
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
   };
 
-  const isAuthenticated = !!token && !isValidating;
+  const logout = async () => {
+    // Отзываем refresh token на сервере
+    if (refreshToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+      } catch (error) {
+        // Игнорируем ошибки при logout
+      }
+    }
 
-  // Можно добавить декодирование JWT для получения user info
-  const getUser = () => {
-    // Пример: return jwt_decode(token) или хранить user отдельно
-    return null;
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setAccessToken(null);
+    setRefreshToken(null);
   };
 
-  return { token, login, logout, isAuthenticated, getUser, isValidating };
+  const isAuthenticated = !!accessToken && !isValidating;
+
+  return { 
+    accessToken, 
+    refreshToken, 
+    login, 
+    logout, 
+    isAuthenticated, 
+    isValidating,
+    refreshAccessToken 
+  };
 }

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"tether-server/config"
 	"time"
@@ -13,17 +15,47 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID string) (string, error) {
+type TokenPair struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+func GenerateAccessToken(userID string) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)), // Short-lived access token
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(config.AppConfig.JWTSecret))
+}
+
+func GenerateRefreshToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+func GenerateTokenPair(userID string) (*TokenPair, error) {
+	accessToken, err := GenerateAccessToken(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func ValidateToken(tokenString string) (*Claims, error) {

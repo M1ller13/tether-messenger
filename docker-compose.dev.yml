@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tether-postgres-dev
+    environment:
+      POSTGRES_DB: tether_messenger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - tether-dev-network
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    container_name: tether-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - tether-dev-network
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  tether-dev-network:
+    driver: bridge
