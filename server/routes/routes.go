@@ -35,6 +35,7 @@ func SetupRoutes(app *fiber.App) {
 	// Chat routes
 	protected.Get("/chats", handlers.GetChats)
 	protected.Post("/chats", handlers.CreateChat)
+	protected.Get("/chats/:chatId", handlers.GetChat)
 	protected.Get("/chats/:chatId/messages", handlers.GetMessages)
 	protected.Post("/messages", handlers.SendMessage)
 
@@ -60,4 +61,8 @@ func SetupRoutes(app *fiber.App) {
 	protected.Post("/cards", handlers.CreateCard)
 	protected.Put("/cards/:id", handlers.UpdateCard)
 	protected.Delete("/cards/:id", handlers.DeleteCard)
+
+	// E2EE routes
+	protected.Post("/e2ee/device-keys", handlers.PublishDeviceKeys)
+	protected.Get("/e2ee/prekey-bundle/:userId", handlers.FetchPreKeyBundle)
 }

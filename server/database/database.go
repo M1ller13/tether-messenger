@@ -47,6 +47,8 @@ func ConnectDB() {
 		&models.Message{},
 		&models.EmailVerification{},
 		&models.RefreshToken{},
+		&models.DeviceKey{},
+		&models.OneTimePreKey{},
 		&models.Workspace{},
 		&models.WorkspaceMember{},
 		&models.Board{},

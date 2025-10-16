@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ensurePublishedKeyBundle } from '../crypto/e2ee';
 
 export function useAuth() {
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem('access_token'));
@@ -29,6 +30,13 @@ export function useAuth() {
         } else {
           logout();
         }
+      } else {
+        const profile = await response.json();
+        if (profile?.data?.id) {
+          localStorage.setItem('user_id', profile.data.id);
+        }
+        // Гарантируем публикацию E2EE ключей после успешной проверки
+        await ensurePublishedKeyBundle();
       }
     } catch (error) {
       // Ошибка сети, очищаем токены
@@ -71,6 +79,8 @@ export function useAuth() {
     localStorage.setItem('refresh_token', refreshToken);
     setAccessToken(accessToken);
     setRefreshToken(refreshToken);
+    // После логина — подтянуть профиль и опубликовать ключи
+    validateToken();
   };
 
   const logout = async () => {

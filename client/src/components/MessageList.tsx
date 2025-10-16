@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Message, User } from '../types';
+import { tryDecryptMessage } from '../crypto/e2ee';
 import { chatAPI } from '../api/client';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -34,7 +35,17 @@ const MessageList = ({ chatId, currentUser }: MessageListProps) => {
       setError(null);
       const response = await chatAPI.getMessages(chatId);
       if (response.success) {
-        setMessages(response.data);
+        const decrypted = await Promise.all((response.data as Message[]).map(async (m: any) => {
+          const text = await tryDecryptMessage({
+            ciphertext: (m as any).ciphertext,
+            nonce: (m as any).nonce,
+            alg: (m as any).alg,
+            ephemeral_pub: (m as any).ephemeral_pub,
+            content: m.content,
+          });
+          return { ...m, content: text ?? m.content } as Message;
+        }));
+        setMessages(decrypted);
       } else {
         setError(response.error || 'Failed to load messages');
       }
@@ -115,7 +126,17 @@ const MessageList = ({ chatId, currentUser }: MessageListProps) => {
                 >
                   <div className="flex items-end space-x-2">
                     <div className="flex-1">
-                      <p className="text-sm">{message.content}</p>
+                      <div className="flex items-center space-x-1">
+                        <p className="text-sm">{message.content}</p>
+                        {message.ciphertext && message.alg && (
+                          <span 
+                            className="text-xs opacity-75"
+                            title="End-to-end encrypted"
+                          >
+                            🔒
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex-shrink-0">
                       <span

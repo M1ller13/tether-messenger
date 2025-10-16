@@ -239,6 +239,25 @@ const ChatPage = () => {
           <div className="flex-1 flex flex-col">
             {selectedChat ? (
               <>
+                {/* Chat Header */}
+                <div className="bg-white border-b border-gray-200 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {selectedChat.user1.id === user.id ? selectedChat.user2.display_name : selectedChat.user1.display_name}
+                      </h2>
+                      <span 
+                        className="text-sm text-green-600"
+                        title="End-to-end encryption enabled"
+                      >
+                        🔒 E2EE
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      @{selectedChat.user1.id === user.id ? selectedChat.user2.username : selectedChat.user1.username}
+                    </div>
+                  </div>
+                </div>
                 <MessageList chatId={selectedChat.id} currentUser={user} />
                 <MessageInput chatId={selectedChat.id} onMessageSent={handleMessageSent} />
               </>

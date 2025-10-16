@@ -58,6 +58,14 @@ export const chatAPI = {
     });
     return res.json();
   },
+
+  async getChat(chatId: string) {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch(`/api/chats/${chatId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return res.json();
+  },
   async sendMessage(chatId: string, content: string) {
     const token = localStorage.getItem('access_token');
     const res = await fetch('/api/messages', {
@@ -67,6 +75,25 @@ export const chatAPI = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ chat_id: chatId, content }),
+    });
+    return res.json();
+  },
+
+  async sendEncryptedMessage(payload: {
+    chat_id: string;
+    ciphertext: string;
+    nonce: string;
+    alg: string;
+    ephemeral_pub: string;
+  }) {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
     return res.json();
   },
@@ -110,6 +137,40 @@ export const chatAPI = {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: formData,
+    });
+    return res.json();
+  },
+};
+
+export const e2eeAPI = {
+  async publishDeviceKeys(payload: {
+    device_id: string;
+    identity_key_public: string;
+    signed_prekey_public: string;
+    signed_prekey_signature: string;
+    one_time_prekeys?: { key_id: number; public_key: string }[];
+  }) {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch('/api/e2ee/device-keys', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  async fetchPreKeyBundle(userId: string, deviceId?: string) {
+    const token = localStorage.getItem('access_token');
+    const url = deviceId
+      ? `/api/e2ee/prekey-bundle/${userId}?device_id=${encodeURIComponent(deviceId)}`
+      : `/api/e2ee/prekey-bundle/${userId}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
     return res.json();
   },

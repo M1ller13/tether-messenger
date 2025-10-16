@@ -11,4 +11,8 @@ type Chat struct {
 	User1ID   uuid.UUID `json:"user1_id" gorm:"not null"`
 	User2ID   uuid.UUID `json:"user2_id" gorm:"not null"`
 	CreatedAt time.Time `json:"created_at"`
+
+	// Relations
+	User1 User `json:"user1" gorm:"foreignKey:User1ID"`
+	User2 User `json:"user2" gorm:"foreignKey:User2ID"`
 }
