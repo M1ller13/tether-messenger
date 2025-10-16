@@ -53,7 +53,12 @@ export class WebSocketClient {
       console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);
       
       setTimeout(() => {
-        this.connect(1); // TODO: Get actual user ID
+        // Caller should re-supply a valid userId on next connect; keep it simple for now
+        // In production, inject a function to read current userId from auth state
+        const userId = Number(localStorage.getItem('user_id') || '0');
+        if (userId > 0) {
+          this.connect(userId);
+        }
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
       console.error('Max reconnection attempts reached');

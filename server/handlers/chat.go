@@ -57,6 +57,25 @@ func CreateChat(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true, "data": newChat})
 }
 
+// GET /api/chats/:chatId
+func GetChat(c *fiber.Ctx) error {
+	userIDStr := c.Locals("user_id").(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "error": "Invalid user ID"})
+	}
+	chatID, err := uuid.Parse(c.Params("chatId"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "error": "Invalid chat ID"})
+	}
+	// Check access and get chat with users
+	var chat models.Chat
+	if err := database.DB.Preload("User1").Preload("User2").Where("id = ? AND (user1_id = ? OR user2_id = ?)", chatID, userID, userID).First(&chat).Error; err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false, "error": "Access denied"})
+	}
+	return c.JSON(fiber.Map{"success": true, "data": chat})
+}
+
 // GET /api/chats/:chatId/messages
 func GetMessages(c *fiber.Ctx) error {
 	userIDStr := c.Locals("user_id").(string)
@@ -88,10 +107,15 @@ func SendMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "error": "Invalid user ID"})
 	}
 	var input struct {
-		ChatID  uuid.UUID `json:"chat_id"`
-		Content string    `json:"content"`
+		ChatID uuid.UUID `json:"chat_id"`
+		// One of the following must be provided:
+		Content      string `json:"content"`
+		Ciphertext   string `json:"ciphertext"`
+		Nonce        string `json:"nonce"`
+		Alg          string `json:"alg"`
+		EphemeralPub string `json:"ephemeral_pub"`
 	}
-	if err := c.BodyParser(&input); err != nil || input.ChatID == uuid.Nil || input.Content == "" {
+	if err := c.BodyParser(&input); err != nil || input.ChatID == uuid.Nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "error": "Invalid request body"})
 	}
 	// Проверка доступа
@@ -99,13 +123,21 @@ func SendMessage(c *fiber.Ctx) error {
 	if err := database.DB.Where("id = ? AND (user1_id = ? OR user2_id = ?)", input.ChatID, userID, userID).First(&chat).Error; err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false, "error": "Access denied"})
 	}
+	if input.Ciphertext == "" && input.Content == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "error": "Empty message"})
+	}
+
 	msg := models.Message{
-		ID:        uuid.New(),
-		ChatID:    input.ChatID,
-		SenderID:  userID,
-		Content:   input.Content,
-		CreatedAt: time.Now(),
-		IsRead:    false,
+		ID:           uuid.New(),
+		ChatID:       input.ChatID,
+		SenderID:     userID,
+		Content:      input.Content,
+		Ciphertext:   input.Ciphertext,
+		Nonce:        input.Nonce,
+		Alg:          input.Alg,
+		EphemeralPub: input.EphemeralPub,
+		CreatedAt:    time.Now(),
+		IsRead:       false,
 	}
 	if err := database.DB.Create(&msg).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "error": "Failed to send message"})

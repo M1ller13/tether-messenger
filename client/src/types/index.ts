@@ -16,6 +16,11 @@ export interface Message {
   sender: User;
   chat_id: string;
   created_at: string;
+  // E2EE fields
+  ciphertext?: string;
+  nonce?: string;
+  alg?: string;
+  ephemeral_pub?: string;
 }
 
 export interface Chat {
@@ -39,4 +44,16 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   error?: string;
+}
+
+export interface E2EEPreKeyBundleResponse {
+  success: boolean;
+  data: {
+    user_id: string;
+    device_id: string;
+    identity_key_public: string;
+    signed_prekey_public: string;
+    signed_prekey_signature: string;
+    one_time_prekey?: { key_id: number; public_key: string } | null;
+  };
 }

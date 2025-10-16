@@ -1,5 +1,6 @@
 import { useState, KeyboardEvent } from 'react';
-import { chatAPI } from '../api/client';
+import { chatAPI, e2eeAPI } from '../api/client';
+import { encryptForBundle } from '../crypto/e2ee';
 
 interface MessageInputProps {
   chatId: string | null;
@@ -15,7 +16,39 @@ const MessageInput = ({ chatId, onMessageSent }: MessageInputProps) => {
 
     try {
       setSending(true);
-      const response = await chatAPI.sendMessage(chatId, message.trim());
+      // Try to encrypt using recipient prekey bundle
+      const currentUserId = localStorage.getItem('user_id');
+      let response: any;
+      if (currentUserId) {
+        try {
+          // Get chat info to determine peer user
+          const chatRes = await chatAPI.getChat(chatId);
+          if (chatRes?.success && chatRes?.data) {
+            const chat = chatRes.data;
+            const peerUserId = chat.user1.id === currentUserId ? chat.user2.id : chat.user1.id;
+            
+            const prekeyRes = await e2eeAPI.fetchPreKeyBundle(peerUserId);
+            if (prekeyRes?.success && prekeyRes?.data) {
+              const enc = await encryptForBundle(prekeyRes.data, message.trim());
+              response = await chatAPI.sendEncryptedMessage({
+                chat_id: chatId,
+                ciphertext: enc.ciphertext,
+                nonce: enc.nonce,
+                alg: enc.alg,
+                ephemeral_pub: enc.ephemeral_pub,
+              });
+            } else {
+              response = await chatAPI.sendMessage(chatId, message.trim());
+            }
+          } else {
+            response = await chatAPI.sendMessage(chatId, message.trim());
+          }
+        } catch {
+          response = await chatAPI.sendMessage(chatId, message.trim());
+        }
+      } else {
+        response = await chatAPI.sendMessage(chatId, message.trim());
+      }
       if (response.success) {
         setMessage('');
         onMessageSent();
